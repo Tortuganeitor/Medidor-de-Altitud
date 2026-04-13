@@ -1,0 +1,35 @@
+{
+  "name": "GPS Latitud - Posición Precisa",
+  "short_name": "GPS Latitud",
+  "description": "Conoce tu latitud exacta con análisis IA en tiempo real",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#1D9E75",
+  "theme_color": "#1D9E75",
+  "orientation": "portrait-primary",
+  "lang": "es",
+  "categories": ["utilities", "navigation"],
+  "icons": [
+    {
+      "src": "icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ],
+  "screenshots": [],
+  "shortcuts": [
+    {
+      "name": "Obtener posición",
+      "short_name": "GPS",
+      "description": "Abre la app y localiza tu posición inmediatamente",
+      "url": "/?action=locate"
+    }
+  ]
+}

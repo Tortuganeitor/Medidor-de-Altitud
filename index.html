@@ -1,0 +1,1075 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <meta name="theme-color" content="#1D9E75">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="GPS Lat">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="description" content="Conoce tu latitud exacta con análisis IA en tiempo real">
+  <link rel="manifest" href="manifest.json">
+  <link rel="apple-touch-icon" href="icon-192.png">
+  <link rel="icon" type="image/png" sizes="192x192" href="icon-192.png">
+  <title>GPS Latitud</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+
+    :root {
+      --green: #1D9E75;
+      --green-dark: #085041;
+      --green-light: #E1F5EE;
+      --green-mid: #9FE1CB;
+      --blue: #378ADD;
+      --blue-light: #E6F1FB;
+      --blue-dark: #0C447C;
+      --amber: #BA7517;
+      --amber-light: #FAEEDA;
+      --red: #A32D2D;
+      --red-light: #FCEBEB;
+      --gray: #888780;
+      --gray-light: #F1EFE8;
+      --text: #1a1a1a;
+      --text-muted: #666;
+      --text-hint: #999;
+      --bg: #f5f5f0;
+      --surface: #ffffff;
+      --border: rgba(0,0,0,0.1);
+      --radius: 14px;
+      --radius-sm: 8px;
+      --safe-top: env(safe-area-inset-top, 0px);
+      --safe-bottom: env(safe-area-inset-bottom, 0px);
+    }
+
+    @media (prefers-color-scheme: dark) {
+      :root {
+        --green: #5DCAA5;
+        --green-dark: #9FE1CB;
+        --green-light: #04342C;
+        --green-mid: #0F6E56;
+        --blue: #85B7EB;
+        --blue-light: #042C53;
+        --blue-dark: #B5D4F4;
+        --amber: #EF9F27;
+        --amber-light: #412402;
+        --red: #F09595;
+        --red-light: #501313;
+        --gray: #B4B2A9;
+        --gray-light: #2C2C2A;
+        --text: #f0f0eb;
+        --text-muted: #aaa;
+        --text-hint: #777;
+        --bg: #141412;
+        --surface: #1e1e1c;
+        --border: rgba(255,255,255,0.1);
+      }
+    }
+
+    html, body {
+      height: 100%;
+      overflow: hidden;
+      background: var(--bg);
+      color: var(--text);
+      font-family: -apple-system, 'Helvetica Neue', Arial, sans-serif;
+      font-size: 16px;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    #app {
+      height: 100%;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+
+    /* ── STATUS BAR SPACER ── */
+    .status-spacer {
+      height: var(--safe-top);
+      background: var(--green);
+    }
+
+    /* ── HEADER ── */
+    .header {
+      background: var(--green);
+      padding: 14px 20px 16px;
+      flex-shrink: 0;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .header::after {
+      content: '';
+      position: absolute;
+      bottom: -40px; right: -40px;
+      width: 140px; height: 140px;
+      background: rgba(255,255,255,0.06);
+      border-radius: 50%;
+      pointer-events: none;
+    }
+
+    .header-top {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 10px;
+    }
+
+    .header-title {
+      font-size: 20px;
+      font-weight: 600;
+      color: white;
+      letter-spacing: -0.5px;
+    }
+
+    .header-icon {
+      width: 36px; height: 36px;
+      background: rgba(255,255,255,0.18);
+      border-radius: 10px;
+      display: flex; align-items: center; justify-content: center;
+    }
+
+    .accuracy-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      background: rgba(255,255,255,0.15);
+      border-radius: 20px;
+      padding: 4px 12px;
+      font-size: 12px;
+      color: rgba(255,255,255,0.9);
+    }
+
+    .pulse-dot {
+      width: 7px; height: 7px;
+      border-radius: 50%;
+      background: var(--green-mid);
+    }
+
+    .pulse-dot.active {
+      animation: pulse 1.4s ease-in-out infinite;
+    }
+
+    @keyframes pulse {
+      0%, 100% { opacity: 1; transform: scale(1); }
+      50% { opacity: 0.4; transform: scale(0.75); }
+    }
+
+    /* ── TABS ── */
+    .tabs {
+      background: var(--surface);
+      display: flex;
+      border-bottom: 1px solid var(--border);
+      flex-shrink: 0;
+    }
+
+    .tab {
+      flex: 1;
+      padding: 12px 4px;
+      font-size: 12px;
+      font-weight: 500;
+      text-align: center;
+      color: var(--text-muted);
+      background: none;
+      border: none;
+      border-bottom: 2px solid transparent;
+      cursor: pointer;
+      transition: color 0.15s, border-color 0.15s;
+    }
+
+    .tab.active {
+      color: var(--green);
+      border-bottom-color: var(--green);
+    }
+
+    /* ── CONTENT ── */
+    .content {
+      flex: 1;
+      overflow-y: auto;
+      -webkit-overflow-scrolling: touch;
+      overscroll-behavior: contain;
+      padding-bottom: calc(16px + var(--safe-bottom));
+    }
+
+    .panel { display: none; }
+    .panel.active { display: block; }
+
+    /* ── CARDS ── */
+    .card {
+      background: var(--surface);
+      border-radius: var(--radius);
+      padding: 16px 18px;
+      margin: 12px 14px 0;
+      border: 1px solid var(--border);
+    }
+
+    .card-label {
+      font-size: 10px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      color: var(--text-hint);
+      margin-bottom: 12px;
+    }
+
+    /* ── STATUS MESSAGE ── */
+    .status-msg {
+      display: flex;
+      align-items: flex-start;
+      gap: 10px;
+      margin: 12px 14px 0;
+      padding: 12px 14px;
+      border-radius: var(--radius-sm);
+      font-size: 13px;
+      line-height: 1.4;
+    }
+
+    .status-msg.info { background: var(--blue-light); color: var(--blue-dark); }
+    .status-msg.success { background: var(--green-light); color: var(--green-dark); }
+    .status-msg.warn { background: var(--amber-light); color: var(--amber); }
+    .status-msg.error { background: var(--red-light); color: var(--red); }
+    .status-msg.hidden { display: none; }
+
+    /* ── LOADING RING ── */
+    .loading-wrap {
+      display: none;
+      flex-direction: column;
+      align-items: center;
+      padding: 32px 20px;
+    }
+
+    .ring-svg { transform: rotate(-90deg); }
+
+    .ring-bg { fill: none; stroke: var(--border); stroke-width: 6; }
+    .ring-fg {
+      fill: none;
+      stroke: var(--green);
+      stroke-width: 6;
+      stroke-linecap: round;
+      stroke-dasharray: 213.6;
+      stroke-dashoffset: 213.6;
+      transition: stroke-dashoffset 0.3s ease;
+    }
+
+    .ring-label {
+      font-size: 14px;
+      font-weight: 600;
+      color: var(--green);
+      text-align: center;
+      margin-top: 14px;
+    }
+
+    .ring-sublabel {
+      font-size: 12px;
+      color: var(--text-muted);
+      text-align: center;
+      margin-top: 4px;
+    }
+
+    /* ── COORDINATE DISPLAY ── */
+    .coord-block {
+      margin-bottom: 14px;
+    }
+
+    .coord-block:last-child { margin-bottom: 0; }
+
+    .coord-name {
+      font-size: 11px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.8px;
+      color: var(--text-hint);
+      margin-bottom: 2px;
+    }
+
+    .coord-dd {
+      font-size: 32px;
+      font-weight: 300;
+      letter-spacing: -1px;
+      color: var(--text);
+      font-variant-numeric: tabular-nums;
+      line-height: 1;
+    }
+
+    .coord-dd span { font-size: 18px; color: var(--text-muted); }
+
+    .coord-dms {
+      font-size: 12px;
+      color: var(--text-muted);
+      margin-top: 3px;
+      font-variant-numeric: tabular-nums;
+    }
+
+    /* ── METRICS GRID ── */
+    .metrics {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 10px;
+      margin: 12px 14px 0;
+    }
+
+    .metric {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      padding: 12px 14px;
+    }
+
+    .metric-label {
+      font-size: 10px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.8px;
+      color: var(--text-hint);
+      margin-bottom: 4px;
+    }
+
+    .metric-value {
+      font-size: 22px;
+      font-weight: 500;
+      color: var(--text);
+      font-variant-numeric: tabular-nums;
+    }
+
+    .metric-value small {
+      font-size: 13px;
+      font-weight: 400;
+      color: var(--text-muted);
+      margin-left: 2px;
+    }
+
+    /* ── MAP SKETCH ── */
+    .map-box {
+      width: 100%;
+      height: 160px;
+      background: var(--green-light);
+      border-radius: 10px;
+      overflow: hidden;
+      margin-bottom: 10px;
+    }
+
+    .map-box svg { width: 100%; height: 100%; }
+
+    /* ── BUTTONS ── */
+    .btn-primary {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      width: calc(100% - 28px);
+      margin: 12px 14px 0;
+      padding: 16px;
+      background: var(--green);
+      color: white;
+      border: none;
+      border-radius: var(--radius);
+      font-size: 16px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: opacity 0.15s, transform 0.1s;
+      -webkit-appearance: none;
+    }
+
+    .btn-primary:active { transform: scale(0.97); opacity: 0.85; }
+    .btn-primary:disabled { opacity: 0.45; }
+    .btn-primary.blue { background: var(--blue); }
+
+    .btn-ghost {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      width: calc(100% - 28px);
+      margin: 10px 14px 0;
+      padding: 13px;
+      background: transparent;
+      color: var(--text-muted);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      font-size: 14px;
+      cursor: pointer;
+      transition: background 0.15s;
+    }
+
+    .btn-ghost:active { background: var(--gray-light); }
+
+    /* ── WATCH TOGGLE ── */
+    .watch-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .watch-info { flex: 1; }
+    .watch-info strong { font-size: 14px; display: block; margin-bottom: 2px; }
+    .watch-info span { font-size: 12px; color: var(--text-muted); }
+
+    .toggle-btn {
+      width: 44px; height: 26px;
+      background: var(--border);
+      border-radius: 13px;
+      border: none;
+      position: relative;
+      cursor: pointer;
+      transition: background 0.2s;
+      flex-shrink: 0;
+    }
+
+    .toggle-btn.on { background: var(--green); }
+
+    .toggle-btn::after {
+      content: '';
+      position: absolute;
+      top: 3px; left: 3px;
+      width: 20px; height: 20px;
+      background: white;
+      border-radius: 50%;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.2);
+      transition: transform 0.2s;
+    }
+
+    .toggle-btn.on::after { transform: translateX(18px); }
+
+    /* ── HISTORY ── */
+    .hist-item {
+      padding: 10px 0;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .hist-item:last-child { border-bottom: none; }
+
+    .hist-time {
+      font-size: 11px;
+      color: var(--text-hint);
+      margin-bottom: 2px;
+    }
+
+    .hist-coords {
+      font-size: 13px;
+      font-variant-numeric: tabular-nums;
+      color: var(--text);
+    }
+
+    .hist-acc {
+      font-size: 11px;
+      color: var(--text-muted);
+      margin-top: 1px;
+    }
+
+    /* ── AI PANEL ── */
+    .ai-output {
+      font-size: 14px;
+      line-height: 1.7;
+      color: var(--text);
+      white-space: pre-wrap;
+      min-height: 80px;
+    }
+
+    .ai-output.streaming::after {
+      content: '▍';
+      animation: blink 0.6s infinite;
+      color: var(--blue);
+    }
+
+    @keyframes blink { 0%,100%{opacity:1}50%{opacity:0} }
+
+    .ai-placeholder { color: var(--text-muted); font-size: 14px; }
+
+    /* ── INSTALL BANNER ── */
+    .install-banner {
+      display: none;
+      align-items: center;
+      gap: 12px;
+      margin: 12px 14px 0;
+      padding: 13px 16px;
+      background: var(--blue-light);
+      border-radius: var(--radius-sm);
+      border: 1px solid rgba(55,138,221,0.2);
+    }
+
+    .install-banner.show { display: flex; }
+
+    .install-text { flex: 1; font-size: 13px; color: var(--blue-dark); line-height: 1.4; }
+
+    .install-btn {
+      background: var(--blue);
+      color: white;
+      border: none;
+      border-radius: 8px;
+      padding: 8px 14px;
+      font-size: 13px;
+      font-weight: 600;
+      cursor: pointer;
+      white-space: nowrap;
+      flex-shrink: 0;
+    }
+
+    .install-close {
+      background: none;
+      border: none;
+      color: var(--blue-dark);
+      font-size: 18px;
+      cursor: pointer;
+      padding: 0 2px;
+      opacity: 0.6;
+      flex-shrink: 0;
+    }
+
+    /* ── DATA ROW ── */
+    .data-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 7px 0;
+      border-bottom: 1px solid var(--border);
+      font-size: 13px;
+    }
+
+    .data-row:last-child { border-bottom: none; }
+    .data-row span:first-child { color: var(--text-muted); }
+    .data-row span:last-child { font-weight: 500; }
+
+    svg.icon { vertical-align: middle; }
+  </style>
+</head>
+<body>
+<div id="app">
+  <div class="status-spacer"></div>
+
+  <div class="header">
+    <div class="header-top">
+      <div class="header-title">GPS Latitud</div>
+      <div class="header-icon">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5" stroke-linecap="round">
+          <circle cx="12" cy="12" r="3"/><path d="M12 2v3m0 14v3M2 12h3m14 0h3"/>
+        </svg>
+      </div>
+    </div>
+    <div class="accuracy-pill">
+      <div class="pulse-dot" id="pulse-dot"></div>
+      <span id="header-status">Sin señal GPS</span>
+    </div>
+  </div>
+
+  <div class="tabs">
+    <button class="tab active" onclick="switchTab('datos')">Posición</button>
+    <button class="tab" onclick="switchTab('extras')">Detalles</button>
+    <button class="tab" onclick="switchTab('historial')">Historial</button>
+    <button class="tab" onclick="switchTab('ia')">Análisis IA</button>
+  </div>
+
+  <div class="content">
+
+    <!-- INSTALL BANNER -->
+    <div class="install-banner" id="install-banner">
+      <div class="install-text">Instala la app en tu móvil para usarla sin conexión</div>
+      <button class="install-btn" id="install-btn" onclick="installApp()">Instalar</button>
+      <button class="install-close" onclick="closeBanner()">×</button>
+    </div>
+
+    <!-- ═══ PANEL: DATOS ═══ -->
+    <div id="panel-datos" class="panel active">
+
+      <div class="status-msg info" id="status-msg">
+        Pulsa el botón para obtener tu posición exacta
+      </div>
+
+      <div class="loading-wrap" id="loading">
+        <svg class="ring-svg" width="100" height="100" viewBox="0 0 80 80">
+          <circle class="ring-bg" cx="40" cy="40" r="34"/>
+          <circle class="ring-fg" id="ring" cx="40" cy="40" r="34"/>
+        </svg>
+        <div class="ring-label" id="ring-pct">0%</div>
+        <div class="ring-sublabel" id="ring-msg">Iniciando GPS...</div>
+      </div>
+
+      <div id="coords-section" style="display:none">
+        <div class="card">
+          <div class="card-label">Coordenadas</div>
+
+          <div class="coord-block">
+            <div class="coord-name">Latitud</div>
+            <div class="coord-dd" id="lat-dd">—<span>°</span></div>
+            <div class="coord-dms" id="lat-dms">—</div>
+          </div>
+
+          <div class="coord-block">
+            <div class="coord-name">Longitud</div>
+            <div class="coord-dd" id="lon-dd">—<span>°</span></div>
+            <div class="coord-dms" id="lon-dms">—</div>
+          </div>
+        </div>
+
+        <div class="metrics">
+          <div class="metric">
+            <div class="metric-label">Precisión</div>
+            <div class="metric-value" id="m-acc">—<small>m</small></div>
+          </div>
+          <div class="metric">
+            <div class="metric-label">Altitud</div>
+            <div class="metric-value" id="m-alt">—<small>m</small></div>
+          </div>
+          <div class="metric">
+            <div class="metric-label">Velocidad</div>
+            <div class="metric-value" id="m-spd">—<small>km/h</small></div>
+          </div>
+          <div class="metric">
+            <div class="metric-label">Rumbo</div>
+            <div class="metric-value" id="m-hdg">—<small>°</small></div>
+          </div>
+        </div>
+
+        <div class="card" style="margin-top:12px">
+          <div class="card-label">Mapa esquemático</div>
+          <div class="map-box" id="map-box"></div>
+          <div style="font-size:11px;color:var(--text-hint);text-align:center">Representación a escala de la precisión</div>
+        </div>
+
+        <div class="card" style="margin-top:12px">
+          <div class="watch-row">
+            <div class="watch-info">
+              <strong>Seguimiento continuo</strong>
+              <span>Actualiza en tiempo real al moverte</span>
+            </div>
+            <button class="toggle-btn" id="watch-toggle" onclick="toggleWatch()"></button>
+          </div>
+        </div>
+      </div>
+
+      <button class="btn-primary" id="btn-locate" onclick="getLocation()">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round">
+          <circle cx="12" cy="12" r="3"/><path d="M12 2v3m0 14v3M2 12h3m14 0h3"/><circle cx="12" cy="12" r="9" stroke-dasharray="2 4"/>
+        </svg>
+        Obtener posición
+      </button>
+
+      <button class="btn-ghost" id="btn-copy" style="display:none" onclick="copyCoords()">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+          <rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/>
+        </svg>
+        Copiar coordenadas
+      </button>
+
+      <button class="btn-ghost" id="btn-share" style="display:none" onclick="shareCoords()">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+          <circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/>
+          <line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/>
+        </svg>
+        Compartir ubicación
+      </button>
+
+    </div>
+
+    <!-- ═══ PANEL: EXTRAS ═══ -->
+    <div id="panel-extras" class="panel">
+      <div class="card">
+        <div class="card-label">Información geográfica</div>
+        <div id="extra-rows">
+          <div class="data-row"><span>Zona horaria</span><span id="e-tz">—</span></div>
+          <div class="data-row"><span>Hemisferio</span><span id="e-hemi">—</span></div>
+          <div class="data-row"><span>Cuadrante</span><span id="e-quad">—</span></div>
+          <div class="data-row"><span>Distancia al ecuador</span><span id="e-eco">—</span></div>
+          <div class="data-row"><span>Distancia al polo</span><span id="e-pole">—</span></div>
+          <div class="data-row"><span>Hora de la medición</span><span id="e-time">—</span></div>
+          <div class="data-row"><span>Fuente GPS</span><span id="e-src">—</span></div>
+          <div class="data-row"><span>Precisión vertical</span><span id="e-vacc">—</span></div>
+        </div>
+      </div>
+
+      <div class="card" style="margin-top:12px">
+        <div class="card-label">Formatos de coordenadas</div>
+        <div id="format-rows">
+          <div class="data-row"><span>Decimal (DD)</span><span id="f-dd">—</span></div>
+          <div class="data-row"><span>Grados Min Seg</span><span id="f-dms">—</span></div>
+          <div class="data-row"><span>Grados Minutos</span><span id="f-dm">—</span></div>
+          <div class="data-row"><span>UTM (zona)</span><span id="f-utm">—</span></div>
+          <div class="data-row"><span>Geohash</span><span id="f-geo">—</span></div>
+          <div class="data-row"><span>Plus Code</span><span id="f-plus">—</span></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ═══ PANEL: HISTORIAL ═══ -->
+    <div id="panel-historial" class="panel">
+      <div class="card">
+        <div class="card-label">Últimas posiciones</div>
+        <div id="hist-list" style="color:var(--text-muted);font-size:13px">Sin mediciones aún</div>
+      </div>
+      <button class="btn-ghost" style="display:none" id="btn-clear-hist" onclick="clearHistory()">
+        Borrar historial
+      </button>
+    </div>
+
+    <!-- ═══ PANEL: IA ═══ -->
+    <div id="panel-ia" class="panel">
+      <div class="card">
+        <div class="card-label">Análisis geográfico con IA</div>
+        <div class="ai-output ai-placeholder" id="ai-output">
+          Obtén primero tu posición y luego pulsa "Analizar con IA" para recibir información detallada sobre tu ubicación.
+        </div>
+      </div>
+      <button class="btn-primary blue" id="btn-ai" onclick="analyzeAI()" style="display:none">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round">
+          <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
+        </svg>
+        Analizar con IA
+      </button>
+    </div>
+
+  </div>
+</div>
+
+<script>
+// ── STATE ──
+let pos = null;
+let history = [];
+let watchId = null;
+let isWatching = false;
+let deferredPrompt = null;
+let ringTimer = null;
+
+// ── PWA INSTALL ──
+window.addEventListener('beforeinstallprompt', e => {
+  e.preventDefault();
+  deferredPrompt = e;
+  document.getElementById('install-banner').classList.add('show');
+});
+
+window.addEventListener('appinstalled', () => {
+  document.getElementById('install-banner').classList.remove('show');
+});
+
+async function installApp() {
+  if (!deferredPrompt) return;
+  deferredPrompt.prompt();
+  const { outcome } = await deferredPrompt.userChoice;
+  deferredPrompt = null;
+  if (outcome === 'accepted') document.getElementById('install-banner').classList.remove('show');
+}
+
+function closeBanner() {
+  document.getElementById('install-banner').classList.remove('show');
+}
+
+// ── TABS ──
+function switchTab(tab) {
+  const tabs = ['datos','extras','historial','ia'];
+  document.querySelectorAll('.tab').forEach((t,i) => t.classList.toggle('active', tabs[i] === tab));
+  document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
+  document.getElementById('panel-' + tab).classList.add('active');
+}
+
+// ── STATUS ──
+function setStatus(msg, type='info') {
+  const el = document.getElementById('status-msg');
+  el.className = 'status-msg ' + type;
+  el.textContent = msg;
+}
+
+function setHeaderStatus(msg, active=false) {
+  document.getElementById('header-status').textContent = msg;
+  document.getElementById('pulse-dot').classList.toggle('active', active);
+}
+
+// ── RING ANIMATION ──
+function setRing(pct, msg) {
+  const circ = 213.6;
+  document.getElementById('ring').style.strokeDashoffset = circ - circ * pct / 100;
+  document.getElementById('ring-pct').textContent = Math.round(pct) + '%';
+  document.getElementById('ring-msg').textContent = msg;
+}
+
+// ── CONVERSIONS ──
+function toDMS(deg, isLat) {
+  const abs = Math.abs(deg), d = Math.floor(abs);
+  const mf = (abs - d) * 60, m = Math.floor(mf), s = ((mf - m) * 60).toFixed(1);
+  const dir = isLat ? (deg >= 0 ? 'N' : 'S') : (deg >= 0 ? 'E' : 'W');
+  return d + '° ' + m + "' " + s + '" ' + dir;
+}
+
+function toDM(deg, isLat) {
+  const abs = Math.abs(deg), d = Math.floor(abs), m = ((abs - d) * 60).toFixed(3);
+  const dir = isLat ? (deg >= 0 ? 'N' : 'S') : (deg >= 0 ? 'E' : 'W');
+  return d + '° ' + m + "' " + dir;
+}
+
+function estimateTZ(lon) {
+  const o = Math.round(lon / 15);
+  return 'UTC' + (o >= 0 ? '+' : '') + o;
+}
+
+function kmToEquator(lat) { return Math.round(Math.abs(lat) * 111.32) + ' km'; }
+function kmToPole(lat) { return Math.round((90 - Math.abs(lat)) * 111.32) + ' km'; }
+
+function utmZone(lat, lon) {
+  const zone = Math.floor((lon + 180) / 6) + 1;
+  return zone + (lat >= 0 ? 'N' : 'S');
+}
+
+function simpleGeohash(lat, lon, prec=6) {
+  const chars = '0123456789bcdefghjkmnpqrstuvwxyz';
+  let minLat=-90,maxLat=90,minLon=-180,maxLon=180,bits=0,bit=0,even=true,hash='';
+  while (hash.length < prec) {
+    if (even) {
+      const mid=(minLon+maxLon)/2;
+      if(lon>=mid){bit=(bit<<1)|1;minLon=mid}else{bit<<=1;maxLon=mid}
+    } else {
+      const mid=(minLat+maxLat)/2;
+      if(lat>=mid){bit=(bit<<1)|1;minLat=mid}else{bit<<=1;maxLat=mid}
+    }
+    even=!even;
+    if(++bits===5){hash+=chars[bit];bits=0;bit=0;}
+  }
+  return hash;
+}
+
+function plusCodeApprox(lat, lon) {
+  const c = '23456789CFGHJMPQRVWX';
+  const la = lat + 90, lo = lon + 180;
+  const a = Math.floor(la / 20), b = Math.floor(lo / 20);
+  return (c[a]||'?') + (c[b]||'?') + Math.round((la % 20) * 5).toString().padStart(2,'0') + Math.round((lo % 20) * 5).toString().padStart(2,'0') + '+00';
+}
+
+function quadrant(lat, lon) {
+  const ns = lat >= 0 ? 'Norte' : 'Sur';
+  const ew = lon >= 0 ? 'Este' : 'Oeste';
+  return ns + '-' + ew;
+}
+
+// ── MAP SKETCH ──
+function drawMap(lat, lon, acc) {
+  const r = Math.min(55, Math.max(6, Math.log(acc + 1) * 9));
+  document.getElementById('map-box').innerHTML = `
+    <svg viewBox="0 0 320 160" xmlns="http://www.w3.org/2000/svg">
+      <rect width="320" height="160" fill="var(--green-light)"/>
+      <line x1="160" y1="0" x2="160" y2="160" stroke="var(--green-mid)" stroke-width="0.5"/>
+      <line x1="0" y1="80" x2="320" y2="80" stroke="var(--green-mid)" stroke-width="0.5"/>
+      <circle cx="160" cy="80" r="${r}" fill="rgba(29,158,117,0.12)" stroke="var(--green)" stroke-width="1.5"/>
+      <circle cx="160" cy="80" r="5" fill="var(--green)"/>
+      <circle cx="160" cy="80" r="2.5" fill="white"/>
+      <text x="168" y="74" font-size="9" fill="var(--green-dark)" font-family="monospace">±${Math.round(acc)}m</text>
+      <text x="4" y="155" font-size="9" fill="var(--green-dark)" font-family="monospace">${lat.toFixed(5)}°, ${lon.toFixed(5)}°</text>
+    </svg>`;
+}
+
+// ── UPDATE ALL UI ──
+function updateUI(p) {
+  pos = p;
+  const { latitude: lat, longitude: lon, accuracy: acc, altitude: alt, speed: spd, heading: hdg, altitudeAccuracy: vacc } = p.coords;
+
+  // Coords
+  document.getElementById('lat-dd').innerHTML = lat.toFixed(6) + '<span>°</span>';
+  document.getElementById('lon-dd').innerHTML = lon.toFixed(6) + '<span>°</span>';
+  document.getElementById('lat-dms').textContent = toDMS(lat, true);
+  document.getElementById('lon-dms').textContent = toDMS(lon, false);
+
+  // Metrics
+  document.getElementById('m-acc').innerHTML = Math.round(acc) + '<small>m</small>';
+  document.getElementById('m-alt').innerHTML = alt != null ? Math.round(alt) + '<small>m</small>' : '—';
+  document.getElementById('m-spd').innerHTML = spd != null ? Math.round(spd * 3.6) + '<small>km/h</small>' : '—';
+  document.getElementById('m-hdg').innerHTML = hdg != null ? Math.round(hdg) + '<small>°</small>' : '—';
+
+  // Extras
+  document.getElementById('e-tz').textContent = estimateTZ(lon);
+  document.getElementById('e-hemi').textContent = lat >= 0 ? 'Norte' : 'Sur';
+  document.getElementById('e-quad').textContent = quadrant(lat, lon);
+  document.getElementById('e-eco').textContent = kmToEquator(lat);
+  document.getElementById('e-pole').textContent = kmToPole(lat);
+  document.getElementById('e-time').textContent = new Date(p.timestamp).toLocaleTimeString('es-ES');
+  document.getElementById('e-src').textContent = acc < 15 ? 'GPS satélite' : acc < 80 ? 'GPS + Red' : 'Red / IP';
+  document.getElementById('e-vacc').textContent = vacc != null ? '±' + Math.round(vacc) + ' m' : '—';
+
+  // Formats
+  document.getElementById('f-dd').textContent = lat.toFixed(5) + ', ' + lon.toFixed(5);
+  document.getElementById('f-dms').textContent = toDMS(lat,true).replace(' ','').slice(0,-1);
+  document.getElementById('f-dm').textContent = toDM(lat,true);
+  document.getElementById('f-utm').textContent = 'Zona ' + utmZone(lat, lon);
+  document.getElementById('f-geo').textContent = simpleGeohash(lat, lon);
+  document.getElementById('f-plus').textContent = plusCodeApprox(lat, lon);
+
+  drawMap(lat, lon, acc);
+
+  // Status
+  const q = acc < 15 ? ['success','GPS satélite · precisión excelente'] : acc < 80 ? ['warn','GPS + red · buena precisión'] : ['error','Solo red · precisión baja'];
+  setStatus(q[1], q[0]);
+  setHeaderStatus('±' + Math.round(acc) + ' m · ' + lat.toFixed(4) + '°', true);
+
+  // History
+  history.unshift({ lat, lon, acc, ts: new Date(p.timestamp).toLocaleTimeString('es-ES') });
+  if (history.length > 30) history.pop();
+  renderHistory();
+
+  document.getElementById('coords-section').style.display = 'block';
+  document.getElementById('btn-copy').style.display = 'flex';
+  document.getElementById('btn-share').style.display = 'flex';
+  document.getElementById('btn-ai').style.display = 'flex';
+}
+
+// ── GEOLOCATION ──
+function getLocation() {
+  if (!navigator.geolocation) { setStatus('Tu navegador no soporta geolocalización', 'error'); return; }
+  document.getElementById('btn-locate').disabled = true;
+  document.getElementById('loading').style.display = 'flex';
+  document.getElementById('status-msg').className = 'status-msg hidden';
+
+  let pct = 0;
+  const stages = ['Buscando satélites...','Triangulando señal...','Calculando posición...','Ajustando precisión...'];
+  setRing(0, stages[0]);
+  ringTimer = setInterval(() => {
+    pct = Math.min(pct + 4, 94);
+    setRing(pct, stages[Math.min(3, Math.floor(pct/25))]);
+  }, 150);
+
+  navigator.geolocation.getCurrentPosition(
+    p => {
+      clearInterval(ringTimer);
+      setRing(100, 'Posición obtenida');
+      setTimeout(() => {
+        document.getElementById('loading').style.display = 'none';
+        document.getElementById('btn-locate').disabled = false;
+        updateUI(p);
+      }, 350);
+    },
+    err => {
+      clearInterval(ringTimer);
+      document.getElementById('loading').style.display = 'none';
+      document.getElementById('btn-locate').disabled = false;
+      const m = {1:'Permiso denegado · activa el GPS en ajustes del sistema', 2:'Señal no disponible · comprueba la conexión', 3:'Tiempo agotado · reintenta en exterior'};
+      setStatus(m[err.code] || 'Error desconocido', 'error');
+      setHeaderStatus('Sin señal GPS');
+    },
+    { enableHighAccuracy: true, timeout: 20000, maximumAge: 0 }
+  );
+}
+
+function toggleWatch() {
+  isWatching = !isWatching;
+  document.getElementById('watch-toggle').classList.toggle('on', isWatching);
+  if (isWatching) {
+    watchId = navigator.geolocation.watchPosition(updateUI, () => {}, { enableHighAccuracy: true, maximumAge: 1000 });
+    setHeaderStatus('Seguimiento activo', true);
+  } else {
+    if (watchId != null) navigator.geolocation.clearWatch(watchId);
+    setHeaderStatus(pos ? '±' + Math.round(pos.coords.accuracy) + ' m · ' + pos.coords.latitude.toFixed(4) + '°' : 'Sin señal GPS', false);
+  }
+}
+
+// ── HISTORY ──
+function renderHistory() {
+  const el = document.getElementById('hist-list');
+  if (!history.length) { el.textContent = 'Sin mediciones aún'; return; }
+  el.innerHTML = history.map(h => `
+    <div class="hist-item">
+      <div class="hist-time">${h.ts}</div>
+      <div class="hist-coords">${h.lat.toFixed(6)}°, ${h.lon.toFixed(6)}°</div>
+      <div class="hist-acc">Precisión: ±${Math.round(h.acc)} m</div>
+    </div>`).join('');
+  document.getElementById('btn-clear-hist').style.display = 'flex';
+}
+
+function clearHistory() {
+  history = [];
+  renderHistory();
+  document.getElementById('btn-clear-hist').style.display = 'none';
+}
+
+// ── SHARE / COPY ──
+async function copyCoords() {
+  if (!pos) return;
+  const { latitude: lat, longitude: lon } = pos.coords;
+  const text = lat.toFixed(6) + ', ' + lon.toFixed(6);
+  try {
+    await navigator.clipboard.writeText(text);
+    const btn = document.getElementById('btn-copy');
+    const orig = btn.innerHTML;
+    btn.innerHTML = '<span>✓ Copiado</span>';
+    setTimeout(() => btn.innerHTML = orig, 1600);
+  } catch(e) {}
+}
+
+async function shareCoords() {
+  if (!pos) return;
+  const { latitude: lat, longitude: lon, accuracy: acc } = pos.coords;
+  const text = `Mi ubicación GPS:\nLatitud: ${lat.toFixed(6)}°\nLongitud: ${lon.toFixed(6)}°\nPrecisión: ±${Math.round(acc)}m\nhttps://maps.google.com/?q=${lat},${lon}`;
+  try {
+    if (navigator.share) await navigator.share({ title: 'Mi posición GPS', text });
+    else await navigator.clipboard.writeText(text);
+  } catch(e) {}
+}
+
+// ── AI ANALYSIS ──
+async function analyzeAI() {
+  if (!pos) return;
+  switchTab('ia');
+  const { latitude: lat, longitude: lon, accuracy: acc, altitude: alt, speed: spd } = pos.coords;
+  const btn = document.getElementById('btn-ai');
+  btn.disabled = true;
+  const out = document.getElementById('ai-output');
+  out.className = 'ai-output streaming';
+  out.textContent = '';
+
+  const prompt = `Eres un experto en geografía y cartografía. El usuario se encuentra en:
+- Latitud: ${lat.toFixed(6)}° (${toDMS(lat, true)})
+- Longitud: ${lon.toFixed(6)}° (${toDMS(lon, false)})
+- Precisión GPS: ±${Math.round(acc)} metros
+- Altitud: ${alt != null ? Math.round(alt) + ' m sobre el nivel del mar' : 'no disponible'}
+- Velocidad: ${spd != null ? Math.round(spd * 3.6) + ' km/h' : 'en reposo o no disponible'}
+- Zona horaria estimada: ${estimateTZ(lon)}
+- Cuadrante: ${quadrant(lat, lon)}
+- Distancia al ecuador: ${kmToEquator(lat)}
+
+Analiza esta posición y proporciona en español:
+1. Ubicación geográfica aproximada (país, región, zona del mundo)
+2. Contexto geográfico: clima típico, relieve, características del lugar
+3. Interpretación de la calidad GPS obtenida
+4. Posición en el sistema de cuadrículas terrestres y datos interesantes
+5. Algo curioso o notable sobre estas coordenadas
+
+Sé específico, útil y estructurado. Usa emojis al inicio de cada sección para hacerlo visual.`;
+
+  try {
+    const resp = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        model: 'claude-sonnet-4-20250514',
+        max_tokens: 1000,
+        stream: true,
+        messages: [{ role: 'user', content: prompt }]
+      })
+    });
+
+    const reader = resp.body.getReader();
+    const dec = new TextDecoder();
+    let buf = '';
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      buf += dec.decode(value, { stream: true });
+      const lines = buf.split('\n');
+      buf = lines.pop();
+      for (const line of lines) {
+        if (!line.startsWith('data: ')) continue;
+        const data = line.slice(6).trim();
+        if (data === '[DONE]') break;
+        try {
+          const evt = JSON.parse(data);
+          if (evt.type === 'content_block_delta' && evt.delta?.text) out.textContent += evt.delta.text;
+        } catch(e) {}
+      }
+    }
+    out.className = 'ai-output';
+  } catch(e) {
+    out.className = 'ai-output';
+    out.textContent = 'Error al conectar con el servicio de análisis. Comprueba tu conexión e inténtalo de nuevo.';
+  }
+  btn.disabled = false;
+}
+
+// ── SERVICE WORKER ──
+if ('serviceWorker' in navigator) {
+  navigator.serviceWorker.register('sw.js').catch(() => {});
+}
+</script>
+</body>
+</html>

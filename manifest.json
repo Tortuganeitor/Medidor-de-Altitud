@@ -2,7 +2,7 @@
   "name": "GPS Latitud - Posición Precisa",
   "short_name": "GPS Latitud",
   "description": "Conoce tu latitud exacta con análisis IA en tiempo real",
-  "start_url": "Medidor-de-Altitud/",
+  "start_url": "/Medidor-de-Altitud/",
   "display": "standalone",
   "background_color": "#1D9E75",
   "theme_color": "#1D9E75",
